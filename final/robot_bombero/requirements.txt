@@ -1,0 +1,8 @@
+ultralytics
+pyserial
+flask
+numpy
+pillow
+pyyaml
+tqdm
+requests

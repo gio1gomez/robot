@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Robot Bombero</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #0f172a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        header {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #111827;
+            border-bottom: 1px solid #334155;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .main-layout {
+            height: calc(100vh - 64px);
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 18px;
+            padding: 18px;
+        }
+
+        .left-panel {
+            background: #1e293b;
+            border: 1px solid #475569;
+            border-radius: 16px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .panel-title {
+            font-size: 22px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 76px 76px 76px;
+            grid-template-rows: 66px 66px 66px;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button {
+            height: 66px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            background: #0891b2;
+            box-shadow: 0 4px 0 #155e75;
+        }
+
+        button:hover {
+            background: #06b6d4;
+        }
+
+        button:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #155e75;
+        }
+
+        .full-btn {
+            width: 100%;
+        }
+
+        .empty {
+            visibility: hidden;
+        }
+
+        .right-panel {
+            background: #020617;
+            border: 1px solid #475569;
+            border-radius: 16px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .camera-view {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 12px;
+            background: black;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .right-panel {
+                min-height: 420px;
+            }
+
+            .left-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Robot Bombero - Control Web y Cámara</h1>
+    </header>
+
+    <main class="main-layout">
+        <section class="left-panel">
+            <div class="panel-title">Control del robot</div>
+
+            <div class="controls">
+                <div class="empty"></div>
+                <button data-cmd="FWD">↑<br>Adelante</button>
+                <div class="empty"></div>
+
+                <button data-cmd="LEFT">←<br>Izquierda</button>
+                <button data-cmd="STOP">STOP</button>
+                <button data-cmd="RIGHT">→<br>Derecha</button>
+
+                <div class="empty"></div>
+                <button data-cmd="BACK">↓<br>Atrás</button>
+                <div class="empty"></div>
+            </div>
+
+            <button class="full-btn" onclick="sendCommand('SERVO_SWEEP_ON')">
+                Probar servo 0° - 180°
+            </button>
+
+            <button class="full-btn" onclick="sendCommand('SERVO_SWEEP_OFF')">
+                Detener servo
+            </button>
+
+            <button class="full-btn" onclick="sendCommand('PUMP_ON')">
+                Encender bomba
+            </button>
+
+            <button class="full-btn" onclick="sendCommand('PUMP_OFF')">
+                Apagar bomba
+            </button>
+        </section>
+
+        <section class="right-panel">
+            <img class="camera-view" src="/video_feed" alt="Vista de cámara">
+        </section>
+    </main>
+
+    <script>
+        async function sendCommand(cmd) {
+            try {
+                await fetch("/command", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ cmd: cmd })
+                });
+            } catch (error) {
+                console.error("Error enviando comando:", error);
+            }
+        }
+
+        const controlButtons = document.querySelectorAll("button[data-cmd]");
+
+        controlButtons.forEach((button) => {
+            const cmd = button.getAttribute("data-cmd");
+
+            button.addEventListener("mousedown", () => {
+                sendCommand(cmd);
+            });
+
+            button.addEventListener("mouseup", () => {
+                if (cmd !== "STOP") {
+                    sendCommand("STOP");
+                }
+            });
+
+            button.addEventListener("mouseleave", () => {
+                if (cmd !== "STOP") {
+                    sendCommand("STOP");
+                }
+            });
+
+            button.addEventListener("touchstart", (event) => {
+                event.preventDefault();
+                sendCommand(cmd);
+            });
+
+            button.addEventListener("touchend", (event) => {
+                event.preventDefault();
+                if (cmd !== "STOP") {
+                    sendCommand("STOP");
+                }
+            });
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.repeat) return;
+
+            if (event.key === "w" || event.key === "ArrowUp") {
+                sendCommand("FWD");
+            }
+
+            if (event.key === "s" || event.key === "ArrowDown") {
+                sendCommand("BACK");
+            }
+
+            if (event.key === "a" || event.key === "ArrowLeft") {
+                sendCommand("LEFT");
+            }
+
+            if (event.key === "d" || event.key === "ArrowRight") {
+                sendCommand("RIGHT");
+            }
+
+            if (event.key === " ") {
+                sendCommand("STOP");
+            }
+        });
+
+        document.addEventListener("keyup", (event) => {
+            const movementKeys = [
+                "w",
+                "a",
+                "s",
+                "d",
+                "ArrowUp",
+                "ArrowDown",
+                "ArrowLeft",
+                "ArrowRight"
+            ];
+
+            if (movementKeys.includes(event.key)) {
+                sendCommand("STOP");
+            }
+        });
+    </script>
+</body>
+</html>
